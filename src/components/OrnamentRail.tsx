@@ -113,7 +113,7 @@ export function OrnamentRail({ sections }: { sections: string[] }) {
           ref={pathRef}
           d={ornamentPath(UNITS)}
           stroke="var(--accent)"
-          strokeWidth="2.5"
+          strokeWidth="3"
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
         />
