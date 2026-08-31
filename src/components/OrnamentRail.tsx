@@ -104,12 +104,16 @@ export function OrnamentRail({ sections }: { sections: string[] }) {
           opacity="0.45"
           vectorEffect="non-scaling-stroke"
         />
-        {/* Прочерчиваемая линия */}
+        {/* Прочерчиваемая линия.
+            Толще следа под ней: контраст между пройденным и оставшимся
+            должен читаться боковым зрением, не требуя присматриваться.
+            non-scaling-stroke обязателен — viewBox растянут по высоте
+            под 100vh, и без него линия поехала бы по толщине. */}
         <path
           ref={pathRef}
           d={ornamentPath(UNITS)}
           stroke="var(--accent)"
-          strokeWidth="1.5"
+          strokeWidth="2.5"
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
         />
