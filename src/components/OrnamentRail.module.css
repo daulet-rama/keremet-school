@@ -1,0 +1,39 @@
+/* Рельс показывается только там, где для него есть поле.
+   Ниже 1180px он не сжимается и не «адаптируется» — он просто отсутствует,
+   и страница остаётся целой. Фирменный элемент, который на телефоне
+   превращается в кашу, хуже отсутствующего. */
+
+.rail {
+  display: none;
+}
+
+@media (min-width: 1180px) {
+  .rail {
+    display: block;
+    position: fixed;
+    left: max(1.25rem, calc((100vw - var(--maxw)) / 2 + 1rem));
+    top: 0;
+    width: 64px;
+    height: 100vh;
+    z-index: 5;
+    pointer-events: none;
+  }
+}
+
+.svg {
+  width: 64px;
+  height: 100vh;
+}
+
+.label {
+  position: absolute;
+  bottom: 2.2rem;
+  left: 50%;
+  transform-origin: left center;
+  transform: rotate(-90deg) translateX(0);
+  white-space: nowrap;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}

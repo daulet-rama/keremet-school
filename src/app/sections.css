@@ -1,0 +1,1135 @@
+/* ============================================================
+   Разделы.
+
+   Правило нулевой высоты: ни теней, ни градиентов, ни скруглений,
+   ни «карточек», ничего по центру. Глубина набирается ТОЛЬКО весом
+   линейки и тоном грунта. Это то, что отличает редакционную работу
+   от продуктового шаблона — и то, что переживает передачу школе.
+
+   Объявленные брейкпоинты, других быть не должно:
+   560 · 720 · 940 · 1180 · 1440
+   (в изученных вендорских темах их 700, 667 и 626 штук на случайных
+   ширинах вроде 437 и 903px — это не адаптивность, а наслоение заплат)
+   ============================================================ */
+
+/* ---------------------------------------------------- Шапка */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: transparent;
+  transition: background-color 0.4s var(--ease), border-color 0.4s var(--ease);
+  border-bottom: 1px solid transparent;
+}
+
+.site-header.is-scrolled {
+  background: color-mix(in srgb, var(--ground) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom-color: var(--line);
+}
+
+.site-header__inner {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  min-height: 72px;
+  padding-block: 0.9rem;
+}
+
+.brand {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 0.6rem;
+  align-items: center;
+}
+
+.brand__mark {
+  grid-row: 1 / 3;
+  color: var(--accent);
+}
+
+.brand__name {
+  font-family: var(--font-display-stack);
+  font-size: 1.35rem;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.brand__descriptor {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.site-nav {
+  margin-left: auto;
+  display: none;
+}
+
+.site-nav__list {
+  display: flex;
+  gap: clamp(1rem, 2vw, 2.1rem);
+  font-size: var(--fs-small);
+}
+
+.site-header__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.site-header__cta {
+  display: none;
+}
+
+.burger {
+  font-size: var(--fs-small);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.75rem 0.5rem;
+  /* 24×24 минимальная цель по WCAG 2.2 — с запасом */
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.mobile-menu {
+  border-top: 1px solid var(--line);
+  background: var(--ground);
+  padding-block: 1.5rem 2.5rem;
+}
+
+.mobile-menu__list {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.mobile-menu__list a {
+  display: block;
+  padding: 0.85rem 0;
+  font-family: var(--font-display-stack);
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.mobile-menu__cta {
+  color: var(--accent);
+}
+
+@media (min-width: 940px) {
+  .site-nav {
+    display: block;
+  }
+  .site-header__actions {
+    margin-left: 0;
+  }
+  .site-header__cta {
+    display: inline-flex;
+    padding: 0.8rem 1.4rem;
+  }
+  .burger {
+    display: none;
+  }
+  .mobile-menu {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------- Герой */
+
+.hero {
+  padding-block: clamp(3rem, 7vw, 6rem) clamp(3.5rem, 8vw, 7rem);
+  position: relative;
+}
+
+.hero__inner {
+  display: grid;
+  gap: clamp(2.5rem, 5vw, 4rem);
+}
+
+.hero__title {
+  margin-top: 1.6rem;
+  max-width: 16ch;
+}
+
+/* Художественные переносы строк — только там, где есть ширина.
+   Ниже 720px текст переносится естественно, иначе на телефоне
+   получается рваная лесенка. */
+.hero__line {
+  display: inline;
+}
+
+.hero__lead {
+  margin-top: clamp(1.5rem, 3vw, 2.2rem);
+  max-width: 46ch;
+}
+
+.hero__actions {
+  margin-top: clamp(1.8rem, 3vw, 2.6rem);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+/* Крупный орнамент за заголовком.
+   Тот же путь, что на рельсе, но в большом масштабе и на первом экране.
+   Держим низкую непрозрачность: это подложка, а не иллюстрация —
+   заголовок обязан оставаться главным. */
+.hero__ornament {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.hero__ornament svg {
+  position: absolute;
+  left: 52%;
+  top: -20%;
+  height: 150%;
+  width: auto;
+  opacity: 0.2;
+}
+
+.hero__inner,
+.hero__scroll {
+  position: relative;
+  z-index: 1;
+}
+
+/* Обрезается сверху и снизу границами секции — читается фрагментом
+   большого узора, а не отдельной загогулиной в простенке. Проходит
+   за карточкой: перекрытие даёт слоистость без единой тени. */
+@media (min-width: 940px) {
+  .hero__ornament svg {
+    left: 58%;
+    top: -26%;
+    height: 165%;
+    opacity: 0.22;
+  }
+}
+
+.hero__aside {
+  max-width: 300px;
+}
+
+.hero__meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.9rem;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hero__scroll {
+  position: absolute;
+  right: var(--gutter);
+  bottom: clamp(3rem, 6vw, 5.5rem);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  writing-mode: vertical-rl;
+}
+
+@media (min-width: 720px) {
+  .hero__line {
+    display: block;
+  }
+}
+
+@media (min-width: 940px) {
+  .hero__inner {
+    grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+    align-items: end;
+  }
+}
+
+/* ------------------------------------------------ Общие части */
+
+.section__title {
+  margin-top: 1.1rem;
+  max-width: 20ch;
+}
+
+.life__head,
+.oneyear__head {
+  display: grid;
+  gap: clamp(1.2rem, 3vw, 3rem);
+  margin-top: 1.1rem;
+  margin-bottom: clamp(2.5rem, 5vw, 4rem);
+}
+
+@media (min-width: 940px) {
+  .life__head,
+  .oneyear__head {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* --------------------------------------------- Результат */
+
+.proof {
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+  border-top: 1px solid var(--line-strong);
+}
+
+.proof__item {
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
+  margin-top: -1px;
+}
+
+.proof__value {
+  font-family: var(--font-display-stack);
+  font-size: clamp(2.8rem, 5.5vw, 4.4rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.proof__suffix {
+  font-size: 0.5em;
+  color: var(--accent);
+}
+
+.proof__label {
+  margin-top: 0.7rem;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+  max-width: 26ch;
+}
+
+/* Реестр поступлений */
+
+.ledger {
+  margin-top: clamp(3rem, 6vw, 5rem);
+}
+
+.ledger__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.ledger__share {
+  padding: 0.65rem 1.1rem;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ledger__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.ledger__caption {
+  caption-side: bottom;
+  text-align: left;
+  padding-top: 0.9rem;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ledger__table th,
+.ledger__table td {
+  text-align: left;
+  padding: 0.95rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-weight: 400;
+}
+
+.ledger__table thead th {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-top: 1.1rem;
+}
+
+.ledger__table tbody th {
+  font-weight: 500;
+}
+
+.ledger__country {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+
+.ledger__num {
+  position: relative;
+  text-align: right;
+  width: 34%;
+  padding-right: 0.9rem !important;
+}
+
+/* Полоса в ячейке: величина читается до того, как прочитано число */
+.ledger__bar {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 60%;
+  background: var(--accent);
+  opacity: 0.14;
+}
+
+.ledger__count {
+  position: relative;
+  font-size: 1.05rem;
+}
+
+/* Строка отзывается на курсор: полоса набирает плотность, ряд подсвечивается.
+   Таблица перестаёт быть картинкой и начинает вести себя как объект. */
+.ledger__table tbody tr {
+  transition: background-color 0.3s var(--ease);
+}
+
+.ledger__table tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+.ledger__bar {
+  transition: opacity 0.35s var(--ease);
+}
+
+.ledger__table tbody tr:hover .ledger__bar {
+  opacity: 0.3;
+}
+
+@media (max-width: 559px) {
+  .ledger__country {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------- О школе */
+
+.about {
+  display: grid;
+  gap: clamp(1.4rem, 3vw, 3rem);
+}
+
+.about__body {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.about__para {
+  max-width: 52ch;
+}
+
+.pillars {
+  margin-top: clamp(3rem, 6vw, 5rem);
+  border-top: 1px solid var(--line-strong);
+}
+
+.pillar {
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+  margin-top: -1px;
+}
+
+.pillar__mark {
+  color: var(--accent);
+}
+
+.pillar__title {
+  margin-top: 0.9rem;
+}
+
+.pillar__body {
+  margin-top: 0.6rem;
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+}
+
+@media (min-width: 940px) {
+  .about {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    align-items: start;
+  }
+  .about__title {
+    margin-top: 1.1rem;
+  }
+}
+
+/* ---------------------------------------------------- Бір жыл */
+
+.oneyear__concept {
+  margin-top: 1.1rem;
+  color: var(--night-muted);
+  max-width: 52ch;
+}
+
+/* ------------------------------------------- Температурная кривая года */
+
+.curve {
+  margin: clamp(2rem, 4vw, 3.5rem) 0 clamp(2.5rem, 5vw, 4rem);
+}
+
+.curve__label {
+  color: var(--night-muted);
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--night-line);
+  margin-bottom: 1.4rem;
+}
+
+.curve svg {
+  width: 100%;
+  height: clamp(120px, 16vw, 190px);
+  overflow: visible;
+}
+
+.curve__scale {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  margin-top: 0.9rem;
+  gap: 0.25rem;
+}
+
+.curve__scale li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  text-align: center;
+}
+
+.curve__temp {
+  font-size: var(--fs-micro);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.curve__month {
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--night-muted);
+}
+
+@media (max-width: 559px) {
+  /* На узком экране двенадцать подписей превращаются в кашу.
+     Оставляем кривую и убираем шкалу — значения всё равно есть
+     на карточках месяцев ниже. */
+  .curve__scale {
+    display: none;
+  }
+}
+
+.oneyear__label {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--night-line);
+}
+
+.contactsheet {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--night-line);
+  border: 1px solid var(--night-line);
+  margin-top: 0;
+}
+
+.frame {
+  background: var(--night);
+  padding: 0.9rem;
+}
+
+.frame__plate {
+  aspect-ratio: 4 / 3;
+  background-color: var(--night-2);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 7px,
+    rgba(180, 71, 43, 0.07) 7px 8px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.frame__mark {
+  color: var(--night-line);
+}
+
+.frame__month {
+  margin-top: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.frame__kk {
+  font-family: var(--font-display-stack);
+  font-size: 1rem;
+}
+
+.frame__ru {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--night-muted);
+}
+
+.frame__temp {
+  margin-top: 0.35rem;
+  font-size: var(--fs-small);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 560px) {
+  .contactsheet {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 940px) {
+  .contactsheet {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* ---------------------------------------------------- Программа */
+
+.pathway {
+  overflow: hidden;
+}
+
+.pathway__hint {
+  margin-top: 1rem;
+}
+
+.pathway__progress {
+  margin-top: 1.2rem;
+  height: 2px;
+  background: var(--line);
+  max-width: 320px;
+}
+
+.pathway__bar {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+/* Трек лежит ВНЕ .wrap, чтобы карточки могли уезжать за правый край.
+   Поэтому левый отступ приходится повторять вручную, иначе первая карточка
+   не встаёт в одну колонку с заголовком раздела. */
+/* Левый край трека задаёт обычный .wrap.railed вокруг него — никакой
+   арифметики с 100vw. Справа отступ снимаем, чтобы карточки уходили
+   за край экрана. */
+.pathway__viewport {
+  padding-right: 0;
+}
+
+.pathway__track {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+}
+
+.stage {
+  border-top: 1px solid var(--line-strong);
+  padding-top: 1.4rem;
+}
+
+.stage__index {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.16em;
+  color: var(--accent);
+}
+
+.stage__years {
+  margin-top: 0.8rem;
+  font-size: var(--fs-small);
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.stage__name {
+  margin-top: 0.2rem;
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+}
+
+.stage__body {
+  margin-top: 0.9rem;
+  color: var(--ink-soft);
+  max-width: 40ch;
+}
+
+.stage__points {
+  margin-top: 1.2rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.stage__points li {
+  font-size: var(--fs-small);
+  color: var(--muted);
+  padding-left: 1.1rem;
+  position: relative;
+}
+
+.stage__points li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.65em;
+  width: 5px;
+  height: 1px;
+  background: var(--accent);
+}
+
+@media (min-width: 940px) {
+  .pathway__track {
+    display: flex;
+    gap: clamp(2rem, 4vw, 4rem);
+    width: max-content;
+    will-change: transform;
+  }
+  .stage {
+    width: clamp(320px, 30vw, 440px);
+    flex: none;
+  }
+}
+
+/* ---------------------------------------------------- День в школе */
+
+.life__grid {
+  display: grid;
+  gap: clamp(1rem, 2vw, 1.6rem);
+}
+
+@media (min-width: 720px) {
+  .life__grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  .life__cell--1 {
+    grid-column: span 2;
+  }
+  .life__cell--2 {
+    grid-column: span 4;
+  }
+  .life__cell--3 {
+    grid-column: span 2;
+  }
+  .life__cell--4 {
+    grid-column: span 2;
+  }
+  .life__cell--5 {
+    grid-column: span 2;
+  }
+}
+
+@media (min-width: 1180px) {
+  .life__cell--3 {
+    grid-column: span 2;
+  }
+  .life__cell--4 {
+    grid-column: span 2;
+  }
+  .life__cell--5 {
+    grid-column: span 2;
+  }
+}
+
+/* ---------------------------------------------------- Учителя */
+
+.teachers {
+  border-top: 1px solid var(--line-strong);
+}
+
+.teacher {
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
+  margin-top: -1px;
+}
+
+.teacher__name {
+  margin-top: 1.1rem;
+  font-family: var(--font-display-stack);
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.teacher__subject {
+  margin-top: 0.35rem;
+  font-size: var(--fs-small);
+  color: var(--accent);
+}
+
+.teacher__credential {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 0.35rem;
+}
+
+.teacher__detail {
+  margin-top: 0.8rem;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+}
+
+/* ---------------------------------------------------- Поступление */
+
+.deadline {
+  font-family: var(--font-display-stack);
+  font-size: clamp(1.2rem, 2vw, 1.6rem);
+  color: var(--accent);
+  border-left: 2px solid var(--accent);
+  padding-left: 1rem;
+  align-self: start;
+}
+
+.steps {
+  border-top: 1px solid var(--line-strong);
+}
+
+.step {
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
+  margin-top: -1px;
+}
+
+.step__n {
+  font-family: var(--font-display-stack);
+  font-size: 2.2rem;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.step__title {
+  margin-top: 0.8rem;
+}
+
+.step__body {
+  margin-top: 0.6rem;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+}
+
+.step__meta {
+  margin-top: 0.9rem;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Стоимость */
+
+.fees {
+  margin-top: clamp(3.5rem, 7vw, 6rem);
+  padding-top: clamp(2rem, 4vw, 3rem);
+  border-top: 1px solid var(--line-strong);
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+.fees__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.fees__row dt {
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+}
+
+.fees__row dd {
+  margin: 0;
+  font-family: var(--font-display-stack);
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (min-width: 940px) {
+  .fees {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  }
+}
+
+/* Приёмная комиссия — конкретный человек */
+
+.officer {
+  margin-top: clamp(3.5rem, 7vw, 6rem);
+  padding-top: clamp(2rem, 4vw, 3rem);
+  border-top: 1px solid var(--line-strong);
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+
+.officer__portrait {
+  max-width: 300px;
+}
+
+.officer__name {
+  margin-top: 0.9rem;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+.officer__role {
+  font-size: var(--fs-small);
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.officer__line {
+  margin-top: 1.1rem;
+  max-width: 44ch;
+}
+
+.officer__capacity {
+  margin-block: 1.6rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+}
+
+.officer__number {
+  font-family: var(--font-display-stack);
+  font-size: clamp(3rem, 6vw, 4.5rem);
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.officer__caplabel {
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+  max-width: 14ch;
+}
+
+@media (min-width: 720px) {
+  .officer {
+    grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  }
+}
+
+/* ---------------------------------------------------- Визит */
+
+.visit__inner {
+  display: grid;
+  gap: clamp(2rem, 5vw, 4rem);
+}
+
+.visit__lead {
+  margin-top: 1.3rem;
+}
+
+.field {
+  display: block;
+  margin-bottom: 1.1rem;
+}
+
+.field__label {
+  display: block;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--night-muted);
+  margin-bottom: 0.5rem;
+}
+
+.field__input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--night-line);
+  padding: 0.75rem 0;
+  color: var(--night-text);
+  font-size: 1.05rem;
+  transition: border-color 0.3s var(--ease);
+}
+
+.field__input:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+
+.visit__submit {
+  margin-top: 0.8rem;
+  width: 100%;
+}
+
+.visit__success {
+  border: 1px solid var(--night-line);
+  padding: clamp(1.5rem, 3vw, 2.4rem);
+}
+
+.visit__demo {
+  margin-top: 0.8rem;
+  color: var(--accent);
+}
+
+@media (min-width: 940px) {
+  .visit__inner {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* ---------------------------------------------------- Подвал */
+
+.footer {
+  background: var(--ground-2);
+  padding-block: clamp(3.5rem, 7vw, 6rem) 2.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.footer__top {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3rem);
+}
+
+.footer__brand {
+  color: var(--accent);
+}
+
+.footer__name {
+  font-family: var(--font-display-stack);
+  font-size: 1.6rem;
+  color: var(--ink);
+  margin-top: 0.6rem;
+}
+
+.footer__label {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.9rem;
+}
+
+.footer__social,
+.footer__langs {
+  display: grid;
+  gap: 0.55rem;
+  font-size: var(--fs-small);
+}
+
+.footer__langnote {
+  margin-top: 1rem;
+  max-width: 30ch;
+}
+
+.colophon {
+  margin-top: clamp(3rem, 6vw, 4.5rem);
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+}
+
+.colophon__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-small);
+}
+
+.colophon__row dt {
+  color: var(--muted);
+  min-width: 12ch;
+}
+
+.colophon__row dd {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.footer__legal {
+  margin-top: 2rem;
+}
+
+@media (min-width: 720px) {
+  .footer__top {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1180px) {
+  .footer__top {
+    grid-template-columns: 1.2fr 1fr 1fr 1fr;
+  }
+}
+
+/* ------------------------------------------- Переключатель заметок */
+
+.notes-toggle {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 40;
+  max-width: 300px;
+  text-align: right;
+}
+
+.notes-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: var(--ink);
+  color: var(--ground);
+  padding: 0.8rem 1.1rem;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  min-height: 44px;
+}
+
+.notes-toggle__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.notes-toggle__dot.is-on {
+  background: var(--accent);
+}
+
+.notes-toggle__hint {
+  margin-top: 0.6rem;
+  background: var(--ink);
+  color: var(--ground);
+  padding: 0.8rem 1rem;
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+  text-align: left;
+  opacity: 0.92;
+}
+
+@media (max-width: 719px) {
+  .notes-toggle__hint {
+    display: none;
+  }
+}
