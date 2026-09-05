@@ -1,8 +1,22 @@
 "use client";
 
 import { useRef } from "react";
+import dynamic from "next/dynamic";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { ornamentPath, RAIL_WIDTH, UNIT_HEIGHT } from "@/lib/ornament";
+
+/**
+ * three.js грузится отдельным чанком и только в браузере.
+ *
+ * ssr:false обязателен — сцена трогает document и WebGL, которых на сервере
+ * нет. Но важнее другое: так библиотека не попадает в критический путь.
+ * LCP страницы — текстовый заголовок, и он обязан отрисоваться до того,
+ * как приедет хоть один байт трёхмерной графики.
+ *
+ * Пока чанк едет (и навсегда, если WebGL недоступен или пользователь
+ * попросил меньше движения), на экране остаётся плоский SVG-орнамент.
+ */
+const OrnamentScene = dynamic(() => import("./OrnamentScene"), { ssr: false });
 
 const UNITS = 2;
 
@@ -67,6 +81,7 @@ export function HeroMotion() {
 
   return (
     <div className="hero__ornament" ref={root} aria-hidden="true">
+      <OrnamentScene />
       <svg
         viewBox={`0 0 ${RAIL_WIDTH} ${UNIT_HEIGHT * UNITS}`}
         preserveAspectRatio="xMidYMid meet"

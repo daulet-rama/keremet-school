@@ -77,12 +77,32 @@ const send = (method, params = {}) =>
 
 await send("Page.enable");
 await send("Runtime.enable");
+
+/**
+ * Узкий экран снимаем КАК ТЕЛЕФОН, а не как узкое окно десктопа.
+ *
+ * Без эмуляции тача медиазапрос (pointer: coarse) не срабатывает, и код,
+ * который ветвится по нему — плотность пикселей, толщина геометрии,
+ * гироскоп вместо мыши — молча идёт по десктопной ветке. Проверяешь одно,
+ * а смотришь другое.
+ */
+const isPhone = Number(w) < 900;
 await send("Emulation.setDeviceMetricsOverride", {
   width: Number(w),
   height: Number(h),
-  deviceScaleFactor: 1,
-  mobile: false,
+  deviceScaleFactor: isPhone ? 2 : 1,
+  mobile: isPhone,
 });
+if (isPhone) {
+  await send("Emulation.setTouchEmulationEnabled", {
+    enabled: true,
+    maxTouchPoints: 5,
+  });
+  await send("Emulation.setEmitTouchEventsForMouse", {
+    enabled: true,
+    configuration: "mobile",
+  });
+}
 
 await send("Page.navigate", { url });
 for (let i = 0; i < 80 && !events.includes("Page.loadEventFired"); i++) {

@@ -1,5 +1,4 @@
 import { SplitReveal } from "./SplitReveal";
-import { Slot } from "./primitives";
 import { HeroMotion } from "./HeroMotion";
 
 /**
@@ -13,7 +12,9 @@ import { HeroMotion } from "./HeroMotion";
  * в разметке главной нет ни одного тега <video>. Самая дорогая школа —
  * единственная, которая не запускает фильм вам в лицо.
  *
- * Побочная выгода: LCP — это текст. Не картинка, не видео. Быстрее не бывает.
+ * Побочная выгода: LCP — это текст. Не картинка, не видео. Быстрее не бывает,
+ * и трёхмерная сцена справа этого не меняет: она грузится отдельным чанком
+ * уже после того, как заголовок отрисован.
  */
 export function Hero({
   brand,
@@ -27,7 +28,6 @@ export function Hero({
     ctaPrimary: string;
     ctaSecondary: string;
     scroll: string;
-    media: { ratio: string; caption: string; spec: string };
   };
 }) {
   return (
@@ -63,19 +63,18 @@ export function Hero({
               {hero.ctaSecondary}
             </a>
           </div>
-        </div>
 
-        <div className="hero__aside" data-hero-in>
-          <Slot
-            ratio={hero.media.ratio}
-            caption={hero.media.caption}
-            spec={hero.media.spec}
-          />
-          <p className="hero__meta">
+          <p className="hero__meta" data-hero-in>
             <span>{brand.latin}</span>
             <span>{brand.since}</span>
           </p>
         </div>
+
+        {/* Правая половина отдана трёхмерному орнаменту.
+            Раньше здесь стояла заглушка под фотографию — бежевый
+            прямоугольник, самый безжизненный элемент первого экрана,
+            вдобавок разрезавший объект пополам. Кадр из съёмочного ТЗ
+            переехал в раздел «День в школе», где фотографии и место. */}
       </div>
 
       <p className="hero__scroll" aria-hidden="true">

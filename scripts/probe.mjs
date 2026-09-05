@@ -1,9 +1,18 @@
-/** Быстрый опрос вычисленных стилей на живой странице через CDP. */
+﻿/** Быстрый опрос вычисленных стилей на живой странице через CDP. */
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { setTimeout as sleep } from "node:timers/promises";
 
-const [url, expression] = process.argv.slice(2);
+/**
+ * Второй аргумент — либо само выражение, либо путь к .js-файлу с ним.
+ * Файл надёжнее: PowerShell портит выражения со стрелочными функциями
+ * и кавычками при передаче в аргументах.
+ */
+const [url, exprOrPath] = process.argv.slice(2);
+const expression =
+  exprOrPath && exprOrPath.endsWith(".js") && existsSync(exprOrPath)
+    ? readFileSync(exprOrPath, "utf8")
+    : exprOrPath;
 const edge = [
   "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
   "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
