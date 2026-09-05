@@ -1,17 +1,23 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef } from "react";
 import { Camera, Geometry, Mesh, Program, Renderer, Texture, Transform } from "ogl";
-import { buildShanyrak } from "@/lib/shanyrak";
+import { MODEL } from "@/models/globe-cc0";
 
 /**
- * Орнамент в 3D.
+ * Трёхмерный объект первого экрана.
  *
- * ЧТО ЭТО НЕ: не абстрактная плавающая форма. В объём выведен ровно тот
- * знак, что уже несёт бренд по всему сайту, — поэтому 3D работает
- * содержанием, а не украшением.
+ * Сейчас это глобус: тема школы читается мгновенно и без пояснений, а
+ * содержательно он ложится на «три языка, международная программа» и на
+ * «в любой школе, куда пойдёт после нас». Модель взята с Poly Pizza под
+ * лицензией CC0 и запечена в компактный модуль на этапе сборки — см.
+ * scripts/bake-glb.mjs, поэтому загрузчик glTF в рантайме не нужен.
  *
- * МОБИЛЬНЫЙ ВПЕРВЫЕ ПОЛУЧАЕТ ФИРМЕННЫЙ ЭЛЕМЕНТ: плоский рельс скрыт ниже
+ * СМЕНА МОДЕЛИ — ОДНА СТРОКА: замените импорт MODEL на другой файл из
+ * src/models, либо верните параметрический шаңырақ из lib/shanyrak.ts.
+ * Материал, кадрирование и вращение от объекта не зависят.
+ *
+ * МОБИЛЬНЫЙ ВПЕРВЫЕ ПОЛУЧАЕТ ОБЪЁМНЫЙ ЭЛЕМЕНТ: плоский рельс скрыт ниже
  * 1180px, то есть на телефоне лучшего на сайте не было вовсе.
  *
  * ПОЧЕМУ ogl, А НЕ three.js. Замер: минимальная сцена на three — около
@@ -114,23 +120,12 @@ export default function OrnamentScene() {
     const group = new Transform();
     group.setParent(scene);
 
-    const tube = buildShanyrak({
-      radius: 5,
-      thickness: 0.3,
-      gridPerFamily: 3,
-      sockets: 16,
-      // На телефоне режем детализацию прутка: при физическом размере
-      // экрана разницу между 6 и 10 сегментами по окружности не видно,
-      // а вершин становится вдвое меньше.
-      lengthSegments: isCoarse ? 140 : 220,
-      radialSegments: isCoarse ? 6 : 9,
-    });
+    const tube = MODEL;
 
     const geometry = new Geometry(gl, {
       position: { size: 3, data: tube.position },
       normal: { size: 3, data: tube.normal },
-      uv: { size: 2, data: tube.uv },
-      index: { data: tube.index },
+            index: { data: tube.index },
     });
 
     const matcap = new Texture(gl, {
@@ -238,11 +233,11 @@ export default function OrnamentScene() {
       // Шаңырақ лежит в плоскости XY, поэтому его нужно завалить к зрителю:
       // строго сверху он читается плоским кругом, строго с ребра —
       // отрезком. Наклон около −1 радиана показывает и обод, и купол.
-      group.rotation.x = -1.02 + current.y * 0.28;
-      group.rotation.y = Math.sin(t * 0.6) * 0.12 + current.x * 0.35;
+      group.rotation.x = 0.18 + current.y * 0.3;
+      group.rotation.y = t + scroll * Math.PI * 1.6 + current.x * 0.4;
       // Вращение по оси симметрии: объект радиально симметричен, поэтому
       // вертится ровно и хорош с любого угла — чего трубке не хватало.
-      group.rotation.z = t + scroll * Math.PI * 1.6;
+      group.rotation.z = Math.sin(t * 0.7) * 0.04;
 
       renderer.render({ scene, camera });
     }
