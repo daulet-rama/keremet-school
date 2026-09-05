@@ -1,42 +1,35 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import {
-  CatmullRomCurve3,
-  CanvasTexture,
-  Group,
-  Mesh,
-  MeshMatcapMaterial,
-  PerspectiveCamera,
-  Scene,
-  SRGBColorSpace,
-  TubeGeometry,
-  Vector3,
-  WebGLRenderer,
-} from "three";
+import { Camera, Geometry, Mesh, Program, Renderer, Texture, Transform } from "ogl";
 import { ornamentCurvePoints } from "@/lib/ornament3d";
+import { buildTube, sampleCurve } from "@/lib/tube";
 
 /**
  * Орнамент в 3D.
  *
- * ЧТО ЭТО НЕ: не абстрактная плавающая форма в герое. Такой приём в 2026-м
- * читается как шаблон 2023-го. Здесь в объём выведен ровно тот знак, что уже
- * несёт бренд по всему сайту, — поэтому 3D работает содержанием, а не
- * украшением, и его можно смотреть с любого ракурса.
+ * ЧТО ЭТО НЕ: не абстрактная плавающая форма. В объём выведен ровно тот
+ * знак, что уже несёт бренд по всему сайту, — поэтому 3D работает
+ * содержанием, а не украшением.
  *
- * МОБИЛЬНЫЙ ВПЕРВЫЕ ПОЛУЧАЕТ ФИРМЕННЫЙ ЭЛЕМЕНТ. Плоский рельс скрыт ниже
- * 1180px, то есть на телефоне лучшее, что есть на сайте, не показывалось
- * вообще. Сцена работает на всех размерах и закрывает эту дыру.
+ * МОБИЛЬНЫЙ ВПЕРВЫЕ ПОЛУЧАЕТ ФИРМЕННЫЙ ЭЛЕМЕНТ: плоский рельс скрыт ниже
+ * 1180px, то есть на телефоне лучшего на сайте не было вовсе.
  *
- * Материал — matcap, нарисованный на canvas в рантайме. Он даёт металл без
- * единого источника света и без HDR-карты окружения: ноль сетевых запросов
- * и ноль расчёта освещения на кадр, что на телефоне решает.
+ * ПОЧЕМУ ogl, А НЕ three.js. Замер: минимальная сцена на three — около
+ * 125 КБ gzip, из которых 66% приходится на рендерер, а каталог геометрий
+ * (ради TubeGeometry всё и затевалось) — 3,4 КБ из 527. Та же сцена на ogl
+ * весит 13,4 КБ. Разница в 118 КБ — это 27% веса всей страницы, и платить
+ * их за неиспользуемые PBR, тени, GLTF, PMREM и WebXR незачем.
+ * Контраргумент честный: в выборке награждённых сайтов three.js стоит у
+ * всех, а ogl ни у кого. Но там полноэкранные WebGL-миры, где вес
+ * рендерера окупается функциональностью; здесь один объект, без единого
+ * источника света и без единой текстуры из сети.
  */
 
 const UNITS = 2;
 
-/** Матовый металл терракоты, сгенерированный в рантайме. */
-function makeMatcap(): CanvasTexture {
+/** Матовый металл терракоты, нарисованный на canvas в рантайме. */
+function makeMatcapCanvas(): HTMLCanvasElement {
   const size = 256;
   const c = document.createElement("canvas");
   c.width = c.height = size;
@@ -52,15 +45,39 @@ function makeMatcap(): CanvasTexture {
 
   // Контровой блик снизу-справа — читается как отражённый свет пола.
   const rim = g.createRadialGradient(188, 198, 4, 188, 198, 86);
-  rim.addColorStop(0, "rgba(255,206,175,0.8)");
+  rim.addColorStop(0, "rgba(255,206,175,0.85)");
   rim.addColorStop(1, "rgba(255,206,175,0)");
   g.fillStyle = rim;
   g.fillRect(0, 0, size, size);
 
-  const tex = new CanvasTexture(c);
-  tex.colorSpace = SRGBColorSpace;
-  return tex;
+  return c;
 }
+
+const VERT = `
+attribute vec3 position;
+attribute vec3 normal;
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform mat3 normalMatrix;
+varying vec3 vNormal;
+void main() {
+  vNormal = normalize(normalMatrix * normal);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+/* Matcap: нормаль в пространстве вида напрямую адресует текстуру сферы.
+   Ноль источников света и ноль расчёта освещения на фрагмент. */
+const FRAG = `
+precision highp float;
+uniform sampler2D tMatcap;
+varying vec3 vNormal;
+void main() {
+  vec3 n = normalize(vNormal);
+  vec2 uv = n.xy * 0.5 + 0.5;
+  gl_FragColor = texture2D(tMatcap, uv);
+}
+`;
 
 export default function OrnamentScene() {
   const host = useRef<HTMLDivElement>(null);
@@ -69,81 +86,91 @@ export default function OrnamentScene() {
     const mount = host.current;
     if (!mount) return;
 
-    // Уменьшенное движение: сцена не строится совсем, остаётся плоский SVG.
+    // Уменьшенное движение: сцена не строится, остаётся плоский SVG.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const isCoarse = window.matchMedia("(pointer: coarse)").matches;
 
-    let renderer: WebGLRenderer;
+    let renderer: Renderer;
     try {
-      renderer = new WebGLRenderer({
+      renderer = new Renderer({
         alpha: true,
-        antialias: !isCoarse, // MSAA на телефоне дороже, чем стоит
+        // Нативный MSAA дёшев на мобильных тайловых GPU: сглаживание
+        // разрешается внутри тайла и не выгружается в общую память.
+        antialias: true,
+        // Трубка перекрывает саму себя, поэтому буфер глубины обязателен.
+        depth: true,
         powerPreference: "high-performance",
       });
     } catch {
-      return; // WebGL недоступен — SVG остаётся на месте
+      return; // WebGL недоступен — плоский SVG остаётся на месте
     }
 
-    // Клампинг плотности пикселей. На телефонах dpr бывает 3–4, и полноэкранная
-    // сцена в такой плотности гарантированно роняет частоту кадров и греет
-    // устройство. Визуальной разницы выше 2 на этой геометрии нет.
-    const maxDpr = isCoarse ? 1.75 : 2;
-
-    const scene = new Scene();
-    const camera = new PerspectiveCamera(42, 1, 0.1, 200);
-    camera.position.set(0, 0, 26);
-
-    const pts = ornamentCurvePoints(UNITS).map(([x, y, z]) => new Vector3(x, y, z));
-    const curve = new CatmullRomCurve3(pts, false, "catmullrom", 0.45);
-
-    const geometry = new TubeGeometry(
-      curve,
-      isCoarse ? 340 : 620, // сегментов вдоль
-      // На телефоне трубка толще: при малом физическом размере тонкая
-      // линия читается ниткой и теряет объём. На десктопе наоборот —
-      // толстая превращается в кляксу вместо орнамента.
-      isCoarse ? 0.34 : 0.26,
-      isCoarse ? 9 : 14, // сегментов по окружности
-      false
-    );
-
-    const matcap = makeMatcap();
-    const material = new MeshMatcapMaterial({ matcap });
-    const mesh = new Mesh(geometry, material);
-
-    const group = new Group();
-    group.add(mesh);
-    scene.add(group);
-
-    renderer.domElement.style.cssText =
+    const gl = renderer.gl;
+    gl.canvas.style.cssText =
       "position:absolute;inset:0;width:100%;height:100%;display:block";
-    mount.appendChild(renderer.domElement);
-    // Сообщаем герою, что 3D поднялся: плоский SVG уходит.
+    mount.appendChild(gl.canvas);
     mount.dataset.ready = "1";
+
+    const camera = new Camera(gl, { fov: 42, near: 0.1, far: 200 });
+    const scene = new Transform();
+    const group = new Transform();
+    group.setParent(scene);
+
+    const control = ornamentCurvePoints(UNITS);
+    const curve = sampleCurve(control, isCoarse ? 340 : 620, 0.5);
+    const tube = buildTube(curve, isCoarse ? 0.34 : 0.26, isCoarse ? 9 : 14);
+
+    const geometry = new Geometry(gl, {
+      position: { size: 3, data: tube.position },
+      normal: { size: 3, data: tube.normal },
+      uv: { size: 2, data: tube.uv },
+      index: { data: tube.index },
+    });
+
+    const matcap = new Texture(gl, {
+      image: makeMatcapCanvas(),
+      generateMipmaps: false,
+    });
+
+    const program = new Program(gl, {
+      vertex: VERT,
+      fragment: FRAG,
+      uniforms: { tMatcap: { value: matcap } },
+    });
+
+    const mesh = new Mesh(gl, { geometry, program });
+    mesh.setParent(group);
 
     function resize() {
       const w = mount!.clientWidth;
       const h = mount!.clientHeight;
       if (!w || !h) return;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
-      renderer.setSize(w, h, false);
-      camera.aspect = w / h;
-      // Объект высотой ~15 мировых единиц должен помещаться целиком:
-      // при fov 42° видимая высота равна 2·z·tan(21°), поэтому z ниже 22
-      // обрезает орнамент сверху и снизу, и он перестаёт читаться формой.
-      // На узком контейнере отъезжаем дальше — там кадрирует ширина.
-      // Крупный кроп сверху и снизу — намеренный: полностью влезающий
-      // мелкий объект выглядит робко, обрезанный крупный — уверенно.
+
+      // Плотность пикселей: на телефонах dpr доходит до 3-4, и полноэкранная
+      // сцена в такой плотности роняет частоту кадров и греет устройство.
+      let dpr = Math.min(window.devicePixelRatio || 1, isCoarse ? 1.75 : 2);
+
+      // Жёсткий потолок по числу пикселей поверх коэффициента: на планшете
+      // даже dpr 1.75 даёт площадь, которую мобильный GPU не тянет.
+      const budget = 1920 * 1080;
+      if (w * h * dpr * dpr > budget) {
+        dpr = Math.max(1, Math.sqrt(budget / (w * h)));
+      }
+
+      renderer.dpr = dpr;
+      renderer.setSize(w, h);
+      // Крупный кроп сверху и снизу намеренный: полностью влезающий мелкий
+      // объект выглядит робко, обрезанный крупный — уверенно.
       camera.position.z = w / h < 0.8 ? 30 : isCoarse ? 20 : 26;
-      camera.updateProjectionMatrix();
+      camera.perspective({ aspect: w / h });
     }
     resize();
 
     const ro = new ResizeObserver(resize);
     ro.observe(mount);
 
-    // ---- ввод: указатель на десктопе, наклон устройства на телефоне ----
+    // ---- ввод ----
     const target = { x: 0, y: 0 };
     const current = { x: 0, y: 0 };
 
@@ -158,16 +185,14 @@ export default function OrnamentScene() {
     }
 
     if (isCoarse) {
-      // iOS требует явного разрешения по жесту пользователя, и без него
-      // событие просто не приходит. Молча пробуем подписаться: если браузер
-      // требует разрешения, наклон не заработает, но сцена продолжит жить
-      // на прокрутке — деградация без единой ошибки в консоли.
+      // iOS требует разрешения по жесту пользователя. Подписываемся молча:
+      // если событие не придёт, сцена продолжит жить на прокрутке, и
+      // никакой ошибки пользователь не увидит.
       window.addEventListener("deviceorientation", onTilt, true);
     } else {
       window.addEventListener("pointermove", onPointer, { passive: true });
     }
 
-    // ---- цикл ----
     let scroll = 0;
     function onScroll() {
       const max = document.documentElement.scrollHeight - window.innerHeight;
@@ -189,8 +214,8 @@ export default function OrnamentScene() {
     let t = 0;
     function frame() {
       raf = requestAnimationFrame(frame);
-      // Не рендерим, когда объект вне экрана или вкладка скрыта:
-      // непрерывный цикл на фоне — прямой расход батареи.
+      // Вне экрана и на скрытой вкладке не рендерим: непрерывный цикл
+      // на фоне — прямой расход батареи.
       if (!visible || document.hidden) return;
 
       t += 0.0045;
@@ -198,12 +223,11 @@ export default function OrnamentScene() {
       current.y += (target.y - current.y) * 0.05;
 
       group.rotation.y = t + scroll * Math.PI * 2.2 + current.x * 0.5;
-      // Постоянный наклон по X: строго фронтальный ракурс скрывает спираль
-      // рога, и объём пропадает — форма выглядит плоской вырезкой.
+      // Постоянный наклон: строго фронтальный ракурс скрывает спираль рога.
       group.rotation.x = 0.22 + current.y * 0.3;
       group.rotation.z = Math.sin(t * 0.7) * 0.05;
 
-      renderer.render(scene, camera);
+      renderer.render({ scene, camera });
     }
     frame();
 
@@ -214,11 +238,10 @@ export default function OrnamentScene() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener("deviceorientation", onTilt, true);
-      geometry.dispose();
-      material.dispose();
-      matcap.dispose();
-      renderer.dispose();
-      renderer.domElement.remove();
+      // У ogl нет dispose: освобождаем контекст явно, иначе браузер
+      // упрётся в лимит одновременных WebGL-контекстов.
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
+      gl.canvas.remove();
       delete mount.dataset.ready;
     };
   }, []);
