@@ -2,8 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Camera, Geometry, Mesh, Program, Renderer, Texture, Transform } from "ogl";
-import { ornamentCurvePoints } from "@/lib/ornament3d";
-import { buildTube, sampleCurve } from "@/lib/tube";
+import { buildShanyrak } from "@/lib/shanyrak";
 
 /**
  * Орнамент в 3D.
@@ -25,8 +24,6 @@ import { buildTube, sampleCurve } from "@/lib/tube";
  * рендерера окупается функциональностью; здесь один объект, без единого
  * источника света и без единой текстуры из сети.
  */
-
-const UNITS = 2;
 
 /** Матовый металл терракоты, нарисованный на canvas в рантайме. */
 function makeMatcapCanvas(): HTMLCanvasElement {
@@ -117,9 +114,17 @@ export default function OrnamentScene() {
     const group = new Transform();
     group.setParent(scene);
 
-    const control = ornamentCurvePoints(UNITS);
-    const curve = sampleCurve(control, isCoarse ? 340 : 620, 0.5);
-    const tube = buildTube(curve, isCoarse ? 0.34 : 0.26, isCoarse ? 9 : 14);
+    const tube = buildShanyrak({
+      radius: 5,
+      thickness: 0.3,
+      gridPerFamily: 3,
+      sockets: 16,
+      // На телефоне режем детализацию прутка: при физическом размере
+      // экрана разницу между 6 и 10 сегментами по окружности не видно,
+      // а вершин становится вдвое меньше.
+      lengthSegments: isCoarse ? 140 : 220,
+      radialSegments: isCoarse ? 6 : 9,
+    });
 
     const geometry = new Geometry(gl, {
       position: { size: 3, data: tube.position },
@@ -160,10 +165,18 @@ export default function OrnamentScene() {
 
       renderer.dpr = dpr;
       renderer.setSize(w, h);
-      // Крупный кроп сверху и снизу намеренный: полностью влезающий мелкий
-      // объект выглядит робко, обрезанный крупный — уверенно.
-      camera.position.z = w / h < 0.8 ? 30 : isCoarse ? 20 : 26;
-      camera.perspective({ aspect: w / h });
+
+      // Вписывание по ОБЕИМ осям, а не подобранное на глаз число.
+      // Контейнер сцены вытянут по вертикали, поэтому ограничивает ширина:
+      // видимая высота равна 2·z·tan(fov/2), видимая ширина — она же,
+      // умноженная на соотношение сторон. Подбор «на глаз» ломался ровно
+      // здесь — объект вылезал вбок на текст.
+      const aspect = w / h;
+      const fov = (42 * Math.PI) / 180;
+      const objectSize = 12.5; // диаметр обода с гнёздами
+      const zByHeight = objectSize / (2 * Math.tan(fov / 2));
+      camera.position.z = Math.max(zByHeight, zByHeight / aspect) * 1.06;
+      camera.perspective({ aspect });
     }
     resize();
 
@@ -222,10 +235,14 @@ export default function OrnamentScene() {
       current.x += (target.x - current.x) * 0.05;
       current.y += (target.y - current.y) * 0.05;
 
-      group.rotation.y = t + scroll * Math.PI * 2.2 + current.x * 0.5;
-      // Постоянный наклон: строго фронтальный ракурс скрывает спираль рога.
-      group.rotation.x = 0.22 + current.y * 0.3;
-      group.rotation.z = Math.sin(t * 0.7) * 0.05;
+      // Шаңырақ лежит в плоскости XY, поэтому его нужно завалить к зрителю:
+      // строго сверху он читается плоским кругом, строго с ребра —
+      // отрезком. Наклон около −1 радиана показывает и обод, и купол.
+      group.rotation.x = -1.02 + current.y * 0.28;
+      group.rotation.y = Math.sin(t * 0.6) * 0.12 + current.x * 0.35;
+      // Вращение по оси симметрии: объект радиально симметричен, поэтому
+      // вертится ровно и хорош с любого угла — чего трубке не хватало.
+      group.rotation.z = t + scroll * Math.PI * 1.6;
 
       renderer.render({ scene, camera });
     }
